@@ -1,0 +1,71 @@
+#!/bin/bash
+#
+# configure script for susetest
+#
+# NOT based on autoconf but written by hand instead.
+# Copyright (C) 2021 Olaf Kirch <okir@suse.de>
+
+# microconf:begin
+# require pkg-config
+# require shlib
+# microconf:end
+
+. microconf/prepare
+
+##################################################################
+# The Makefiles we used to ship had a bunch of special cases for MacOS.
+# Try to define them here.
+##################################################################
+function twopence_platform_hook {
+
+	if [ "$uc_platform" = "macos" ]; then
+		# Is this really what we want?
+		__uc_arch_lib=lib
+
+		if [ -z "$uc_enable_manpages" ]; then
+			uc_enable_manpages=false
+		fi
+	fi
+
+	if [ "$uc_os_vendor" = "ubuntu" ]; then
+		if [ -z "$uc_arch_libdir" ]; then
+			uc_arch_libdir="$uc_prefix/lib/$(arch)-linux-gnu"
+		fi
+	fi
+}
+
+uc_define_post_hook platform twopence_platform_hook
+
+##################################################################
+# Get version from RELEASE file
+##################################################################
+uc_define_version susetest_version
+
+##################################################################
+# Now run all the checks we've lined up
+##################################################################
+. microconf/check
+
+if [ "$uc_with_pkg_config" != "yes" ]; then
+	uc_fatal "pkg-config not found, unable to proceed"
+fi
+
+for var_name in python_cflags python_libs python_instdir; do
+	export uc_$var_name="$(pkg-config --variable $var_name twopence)"
+done
+
+for name in bindir libdir; do
+	export uc_twopence_$name="$(pkg-config --variable $name twopence)"
+done
+
+for name in cflags libs; do
+	export uc_twopence_$name="$(pkg-config --$name twopence)"
+done
+
+
+##################################################################
+# Perform substitution steps
+##################################################################
+. microconf/subst
+
+uc_subst Make.defs
