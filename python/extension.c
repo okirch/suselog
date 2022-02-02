@@ -245,7 +245,11 @@ Journal_dealloc(suselog_Journal *self)
 static suselog_journal_t *
 Journal_handle(PyObject *self)
 {
-	return ((suselog_Journal *) self)->journal;
+	suselog_journal_t *handle;
+
+	if ((handle = ((suselog_Journal *) self)->journal) == NULL)
+		PyErr_SetString(PyExc_ValueError, "cannot call journal methods on closed object");
+	return handle;
 }
 
 static const char *
