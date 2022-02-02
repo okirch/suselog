@@ -33,6 +33,7 @@ static void		Journal_dealloc(suselog_Journal *self);
 static PyObject *	Journal_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
 static int		Journal_init(suselog_Journal *self, PyObject *args, PyObject *kwds);
 static PyObject *	Journal_getattro(PyObject *self, PyObject *nameo);
+static PyObject *	Journal_close(PyObject *self, PyObject *args, PyObject *kwds);
 static PyObject *	Journal_beginGroup(PyObject *self, PyObject *args, PyObject *kwds);
 static PyObject *	Journal_finishGroup(PyObject *self, PyObject *args, PyObject *kwds);
 static PyObject *	Journal_beginTest(PyObject *self, PyObject *args, PyObject *kwds);
@@ -131,6 +132,9 @@ static PyMethodDef suselog_journalMethods[] = {
       },
       { "set_color", (PyCFunction) Journal_set_color, METH_VARARGS | METH_KEYWORDS,
 	"Enable/disable ANSI color codes in output"
+      },
+      {	"close", (PyCFunction) Journal_close, METH_VARARGS | METH_KEYWORDS,
+	"Close the journal"
       },
 
       {	NULL }
@@ -302,6 +306,22 @@ Journal_getattro(PyObject *self, PyObject *nameo)
 	}
 
 	return PyObject_GenericGetAttr(self, nameo);
+}
+
+/*
+ * Close the journal
+ */
+PyObject *
+Journal_close(PyObject *_self, PyObject *args, PyObject *kwds)
+{
+	suselog_Journal *self = ((suselog_Journal *) _self);
+
+	if (self->journal)
+		suselog_journal_free(self->journal);
+	self->journal = NULL;
+
+	Py_INCREF(Py_None);
+	return Py_None;
 }
 
 /*
