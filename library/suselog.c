@@ -332,7 +332,7 @@ void
 __suselog_vlogmsg(suselog_journal_t *journal, suselog_severity_t severity, const char *fmt, va_list ap)
 {
 	suselog_test_t *test;
-	char msgbuf[1024];
+	char msgbuf[16*1024];
 
 	vsnprintf(msgbuf, sizeof(msgbuf), fmt, ap);
 
