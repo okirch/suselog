@@ -1423,6 +1423,8 @@ __suselog_hostname(void)
 static void
 __suselog_writer_normal_end_testsuite(const suselog_journal_t *journal)
 {
+	suselog_group_t *group;
+
 	fprintf(stderr,
 		"\n\n"
 		"Test suite finished\n"
@@ -1437,6 +1439,38 @@ __suselog_writer_normal_end_testsuite(const suselog_journal_t *journal)
 		, journal->stats.num_skipped
 		, journal->stats.num_errors
 	       );
+
+	if (journal->stats.num_failed) {
+		fprintf(stderr,
+			"\n\n"
+			"The following test%s failed:\n",
+			journal->stats.num_failed > 1? "s" : "");
+
+		for (group = journal->groups.head; group; group = group->next) {
+			suselog_test_t *test;
+
+			for (test = group->tests.head; test; test = test->next) {
+				if (test->status == SUSELOG_STATUS_FAILURE)
+					fprintf(stderr, "  %s\n", suselog_test_name(test));
+			}
+		}
+	}
+
+	if (journal->stats.num_errors) {
+		fprintf(stderr,
+			"\n\n"
+			"The following test%s had errors:\n",
+			journal->stats.num_errors > 1? "s" : "");
+
+		for (group = journal->groups.head; group; group = group->next) {
+			suselog_test_t *test;
+
+			for (test = group->tests.head; test; test = test->next) {
+				if (test->status == SUSELOG_STATUS_ERROR)
+					fprintf(stderr, "  %s\n", suselog_test_name(test));
+			}
+		}
+	}
 }
 
 static void
