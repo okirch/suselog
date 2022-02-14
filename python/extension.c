@@ -304,6 +304,16 @@ Journal_getattro(PyObject *self, PyObject *nameo)
 
 		return PyUnicode_FromString(statusString);
 	}
+	if (!strcmp(name, "test_name")) {
+		const char *name;
+
+		if ((name = suselog_test_name(test)) == NULL) {
+			Py_INCREF(Py_None);
+			return Py_None;
+		}
+
+		return PyUnicode_FromString(name);
+	}
 
 	return PyObject_GenericGetAttr(self, nameo);
 }
