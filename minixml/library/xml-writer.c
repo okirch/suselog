@@ -168,11 +168,13 @@ xml_node_output(const xml_node_t *node, xml_writer_t *writer, unsigned int inden
 {
 	unsigned int child_indent = indent;
 	int newline = 0;
+	char *temp = NULL;
 
 	if (__string_equal(node->name, "![CDATA[")) {
 		xml_writer_printf(writer, "<%s", node->name);
-		xml_writer_printf(writer, "%s", node->cdata);
+		xml_writer_printf(writer, "%s", xml_escape_entities(node->cdata, &temp));
 		xml_writer_printf(writer, "]]>\n");
+		__drop_string(&temp);
 		return;
 	} else
 	if (node->name != NULL) {
@@ -198,7 +200,6 @@ xml_node_output(const xml_node_t *node, xml_writer_t *writer, unsigned int inden
 
 	if (node->cdata) {
 		unsigned int len;
-		char *temp = NULL;
 
 		if (strchr(node->cdata, '\n')) {
 			xml_writer_printf(writer, "\n");
@@ -234,6 +235,7 @@ const char *
 xml_escape_entities(const char *cdata, char **temp)
 {
 	static const char *escmap[256] = {
+		[4]   = "&#0004;",
 		['<'] = "&lt;",
 		['>'] = "&gt;",
 		['&'] = "&amp;",

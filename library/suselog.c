@@ -1347,7 +1347,9 @@ __escape_one_mb(struct stringbuf *result, const unsigned char *data, size_t len)
 		return 1;
 	}
 
-	if (wc == '\f' || wc == '\v' || wc == '\r') {
+	/* Do not insert any control characters into the output
+	 * unless it's newline or TAB */
+	if (iswcntrl(wc) && wc != '\n' && wc != '\t') {
 		__escape_one_char(result, wc);
 		return n;
 	}
