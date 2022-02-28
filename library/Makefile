@@ -1,44 +1,69 @@
 include ../Make.defs
 
-TARGETS = \
-	  libsuselog.so \
-	  test-logging \
-	  test-junit
+VERSION = $(SUSETEST_VERSION)
+BUILD = $(SHLIB) test-logging test-junit
+INSTALL = install-shlib install-headers
 
-CFLAGS	= -fPIC $(CCOPT) -D_GNU_SOURCE -I../minixml/library
+CFLAGS	= $(CCOPT) -D_GNU_SOURCE -I../minixml/library
+
+SHLIB	= libsuselog.so
 LIBOBJS	= suselog.o
+
+STATICLIB = libsuselog.a
+STATIC_LIBOBJS = $(addprefix static/,$(LIBOBJS))
 
 LINK	= -L../library -lsuselog -L../minixml/library -lminixml -lncurses
 
-VERSION = $(SUSETEST_VERSION)
+ifeq ($(BUILD_STATIC),true)
+  BUILD += $(STATICLIB)
+  INSTALL += install-staticlib
+endif
 
-all: $(TARGETS)
+all: $(BUILD)
 
-install: $(TARGETS)
+install: $(INSTALL)
+
+install-shlib: $(SHLIB)
+	install -d $(DESTDIR)/$(LIBDIR)
+	install -m 555 $(SHLIB) $(DESTDIR)/$(LIBDIR)/$(SHLIB).$(VERSION)
+	ln -sf $(SHLIB).$(VERSION) $(DESTDIR)/$(LIBDIR)/$(SHLIB)
+
+install-headers:
 	install -d $(DESTDIR)/usr/include
 	install -m 444 suselog.h $(DESTDIR)/usr/include
+
+install-staticlib: $(STATICLIB)
 	install -d $(DESTDIR)/$(LIBDIR)
-	install -m 555 libsuselog.so $(DESTDIR)/$(LIBDIR)/libsuselog.so.$(VERSION)
-	ln -sf libsuselog.so.$(VERSION) $(DESTDIR)/$(LIBDIR)/libsuselog.so
+	install -m 644 $(STATICLIB) $(DESTDIR)/$(LIBDIR)/$(STATICLIB)
 
 clean distclean::
-	rm -f $(TARGETS) *.o
+	rm -f $(BUILD) *.o
 	rm -f test-report.xml
 
-libsuselog.so: $(LIBOBJS)
+$(SHLIB): $(LIBOBJS)
 	$(CC) $(CFLAGS) -o $@ -shared -Wl,-soname,$@.$(VERSION) $(LIBOBJS) -lncurses -L../minixml/library -lminixml
 
-suselog.o: suselog.c suselog.h suselog_p.h
-	$(CC) $(CFLAGS) -c -o $@ suselog.c
+$(STATICLIB): $(STATIC_LIBOBJS)
+	$(AR) crv $@ $(STATIC_LIBOBJS)
 
-test-logging: test-logging.o libsuselog.so
+suselog.o: suselog.c suselog.h suselog_p.h
+	$(CC) -fPIC $(CFLAGS) -c -o $@ suselog.c
+
+static/%.o: %.c
+	@mkdir -p static
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+test-logging: test-logging.o $(SHLIB)
 	$(CC) -o $@ test-logging.o $(LINK)
 
 testit.o: testit.c suselog.h
 	$(CC) $(CFLAGS) -c -o $@ testit.c 
 
-test-junit: test-junit.o libsuselog.so
+test-junit: test-junit.o $(SHLIB)
 	$(CC) -o $@ test-junit.o $(LINK)
+
+test-junit-static: test-junit.o $(STATICLIB)
+	$(CC) -static -o $@ test-junit.o $(LINK)
 
 test-junit.o: test-junit.c suselog.h
 	$(CC) $(CFLAGS) -c -o $@ test-junit.c 

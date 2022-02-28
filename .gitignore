@@ -3,6 +3,7 @@
 *.o
 *.so
 *.so.*
+*.a
 test-junit
 test-logging
 to_junit
